@@ -44,7 +44,7 @@ df[cat_columns] = df[cat_columns].apply(lambda x: x.cat.codes)
 
 ##DownSample majority class, because the classes are not equality distributed
 #from: https://elitedatascience.com/imbalanced-classes
-############################
+###################
 #Seperationg majority and minority classes
 df_majority = df[df.Salary == 0]
 df_minority = df[df.Salary == 1]
