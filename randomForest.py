@@ -1,13 +1,11 @@
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
+from sklearn.utils import resample
 
 df = pd.read_excel("data.xlsx")
-print(df.size)
+#print(df.size)
 #print(df.head())
-
-sizes = df['Salary'].value_counts(sort = 1)
-print(sizes)
 
 #drop irrelevent column
 #df.drop(['Capital-gain'], axis = 1, inplace = True)
@@ -16,13 +14,14 @@ print(sizes)
 #Handle Missing values
 df = df.dropna()
 
-print(df.size)
+print(len(df.index))
 
 #convert non-numeric data to numeric
 #method #1
 df.Salary[df.Salary == ' <=50K'] = 0
 df.Salary[df.Salary == ' >50K'] = 1
-
+sizes = df['Salary'].value_counts(sort = 1)
+print(sizes)
 
 #print(df.dtypes)
 
@@ -41,21 +40,37 @@ df['Salary'] = df['Salary'].astype('category')
 cat_columns = df.select_dtypes(['category']).columns
 df[cat_columns] = df[cat_columns].apply(lambda x: x.cat.codes)
 #conversion of stirng to int in complete
+#######################################
+
+##DownSample majority class, because the classes are not equality distributed
+#from: https://elitedatascience.com/imbalanced-classes
+############################
+#Seperationg majority and minority classes
+df_majority = df[df.Salary == 0]
+df_minority = df[df.Salary == 1]
+
+#Downsample majority class
+df_majority_downsample = resample(df_majority, replace = False, n_samples = 7841, random_state=30)
+#combine minority class with downsampled majority class
+df_downsampled = pd.concat([df_majority_downsample, df_minority])
+#########################################################
+sizes = df_downsampled['Salary'].value_counts(sort = 1)
+print(sizes)
 
 
 #Define dependent variable or target class
-Y = df['Salary'].values
+Y = df_downsampled['Salary'].values
 #Y = Y.astype(int)
 
 #Define independent variable or features
-X = df.drop(labels = ['Salary'], axis = 1)
+X = df_downsampled.drop(labels = ['Salary'], axis = 1)
 
 #Split data into train and test
 from sklearn.model_selection import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state = 20)
 
 from sklearn.ensemble import RandomForestClassifier
-model = RandomForestClassifier(n_estimators = 10, random_state = 30)
+model = RandomForestClassifier(n_estimators = 100, random_state = 20)
 
 model.fit(X_train, Y_train)
 
@@ -67,4 +82,8 @@ print("Accuracy: ", metrics.accuracy_score(Y_test, prediction_test))
 
 feature_list = list(X.columns)
 feature_importance = pd.Series(model.feature_importances_, index = feature_list).sort_values(ascending = False)
-print(feature_importance)
+print("Feature importance: \n", feature_importance)
+
+
+
+
